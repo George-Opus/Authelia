@@ -17,6 +17,16 @@ cnpg:
     limits:
       memory: 512Mi
 
+users:
+  create: true
+  secretName: authelia-users
+  entries:
+    benjamin:
+      displayname: "Benjamin"
+      password: "CHANGEME_HASH_ARGON2"
+      email: benjamin@georgeop.us
+      groups:
+        - admins
 # ============================================================
 # Partie 2 : values du chart officiel Authelia
 # Structure alignée sur la référence (helm show values, chart 0.10.x)
