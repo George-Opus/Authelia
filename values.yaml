@@ -29,7 +29,7 @@ authelia:
     className: traefik
     annotations:
       traefik.ingress.kubernetes.io/router.entrypoints: websecure
-      # cert-manager.io/cluster-issuer: letsencrypt-prod
+      cert-manager.io/cluster-issuer: letsencrypt-prod
     tls:
       enabled: true
       secret: authelia-tls
@@ -107,9 +107,9 @@ authelia:
             client_name: OpenCloud
             public: true            # client web PKCE
             redirect_uris:
-              - https://cloud.georgeop.us/
-              - https://cloud.georgeop.us/oidc-callback.html
-              - https://cloud.georgeop.us/oidc-silent-redirect.html
+              - https://opencloud.georgeop.us/
+              - https://opencloud.georgeop.us/oidc-callback.html
+              - https://opencloud.georgeop.us/oidc-silent-redirect.html
             scopes: [openid, profile, email, groups]
             require_pkce: true
             pkce_challenge_method: S256
