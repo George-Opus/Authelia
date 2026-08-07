@@ -1,0 +1,126 @@
+# ============================================================
+# Partie 1 : ressources gérées par CE chart
+# ============================================================
+cnpg:
+  enabled: true
+  clusterName: authelia-db
+  instances: 1
+  imageName: ghcr.io/cloudnative-pg/postgresql:17.4   # VERIFIER derniere version
+  storageClass: local-path
+  size: 2Gi
+  database: authelia
+  owner: authelia
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 512Mi
+
+# ============================================================
+# Partie 2 : values passées au chart officiel Authelia.
+# STRUCTURE A VERIFIER contre le README du chart officiel
+# (charts.authelia.com) - notamment la façon de référencer des
+# secrets existants (bloc `secret:`) qui a évolué entre versions.
+# ============================================================
+authelia:
+  ingress:
+    enabled: true
+    className: traefik
+    annotations:
+      traefik.ingress.kubernetes.io/router.entrypoints: websecure
+      # cert-manager.io/cluster-issuer: letsencrypt-prod
+    tls:
+      enabled: true
+      secret: authelia-tls
+
+  pod:
+    kind: Deployment
+    replicas: 1
+
+  # Le chart officiel monte les secrets en fichiers (AUTHELIA_*_FILE).
+  # Ici on référence le secret CNPG authelia-db-app pour le mot de passe DB.
+  secret:
+    additionalSecrets:
+      authelia-db-app: {}   # monté sous /secrets/authelia-db-app/
+
+  configMap:
+    enabled: true
+
+    theme: dark
+
+    default_2fa_method: totp
+
+    totp:
+      issuer: georgeop.us
+
+    # ---- Backend utilisateurs ----
+    # Démarrage simple: fichier. Migration lldap ensuite (backend ldap).
+    authentication_backend:
+      file:
+        enabled: true
+        path: /config/users_database.yml
+      # ldap:
+      #   enabled: true
+      #   address: ldap://lldap.auth.svc:3890
+      #   base_dn: dc=georgeop,dc=us
+      #   user: uid=authelia,ou=people,dc=georgeop,dc=us
+
+    # ---- Stockage: PostgreSQL CNPG ----
+    storage:
+      postgres:
+        enabled: true
+        address: tcp://authelia-db-rw:5432
+        database: authelia
+        username: authelia
+        password:
+          secret_name: authelia-db-app
+          path: password
+
+    # ---- Sessions ----
+    session:
+      cookies:
+        - domain: georgeop.us
+          subdomain: auth   # -> https://auth.georgeop.us
+      # redis: absent => sessions en mémoire, OK en replica unique
+
+    # ---- Notifier: pas de SMTP pour l'instant ----
+    notifier:
+      filesystem:
+        enabled: true
+        filename: /config/notification.txt
+
+    access_control:
+      default_policy: deny
+      rules:
+        - domain: "*.georgeop.us"
+          policy: two_factor
+
+    # ---- Clients OIDC ----
+    identity_providers:
+      oidc:
+        enabled: true
+        # Les clés de signature (jwks) et secrets HMAC sont à fournir via le
+        # mécanisme de secrets du chart - voir doc "OpenID Connect" d'Authelia.
+        clients:
+          - client_id: opencloud
+            client_name: OpenCloud
+            public: true            # client web PKCE
+            redirect_uris:
+              - https://cloud.georgeop.us/
+              - https://cloud.georgeop.us/oidc-callback.html
+              - https://cloud.georgeop.us/oidc-silent-redirect.html
+            scopes: [openid, profile, email, groups]
+            require_pkce: true
+            pkce_challenge_method: S256
+          - client_id: immich
+            client_name: Immich
+            # client_secret: hash pbkdf2/argon2 à générer:
+            #   authelia crypto hash generate pbkdf2 --random
+            client_secret: "CHANGEME_HASH"
+            redirect_uris:
+              - https://photos.georgeop.us/auth/login
+              - https://photos.georgeop.us/user-settings
+              - app.immich:///oauth-callback   # app mobile
+            scopes: [openid, profile, email]
+            authorization_policy: two_factor

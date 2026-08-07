@@ -1,0 +1,10 @@
+apiVersion: v2
+name: authelia-stack
+description: Authelia + cluster CNPG - umbrella chart pour georgeop.us
+type: application
+version: 0.1.0
+appVersion: "4.39.0"   # VERIFIER la derniere version d'Authelia
+dependencies:
+  - name: authelia
+    repository: https://charts.authelia.com
+    version: "0.10.*"   # VERIFIER: derniere version du chart officiel
