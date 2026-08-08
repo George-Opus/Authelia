@@ -20,9 +20,6 @@ spec:
     spec:
       securityContext:
         fsGroup: 1000
-        capabilities:
-          drop: ["ALL"]
-          add: ["CHOWN", "SETUID", "SETGID"]
       containers:
         - name: lldap
           image: "{{ .Values.lldap.image.repository }}:{{ .Values.lldap.image.tag }}"
@@ -33,6 +30,7 @@ spec:
             runAsNonRoot: true
             allowPrivilegeEscalation: false
             capabilities:
+              add: ["CHOWN", "SETUID", "SETGID"]
               drop: ["ALL"]
           ports:
             - name: ldap
