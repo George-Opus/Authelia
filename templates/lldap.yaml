@@ -20,7 +20,6 @@ spec:
     spec:
       securityContext:
         fsGroup: 1000
-        allowPrivilegeEscalation: false
         capabilities:
           drop: ["ALL"]
           add: ["CHOWN", "SETUID", "SETGID"]
