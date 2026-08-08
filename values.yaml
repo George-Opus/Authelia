@@ -213,6 +213,8 @@ authelia:
             pre_configured_consent_duration: '3 months'
             redirect_uris:
               - 'https://vaultwarden.georgeop.us/identity/connect/oidc-signin'
+              - 'https://vaultwarden.georgeop.us/sso-connector.html'
+
             scopes: ['openid', 'profile', 'email', 'groups', 'offline_access']
             authorization_policy: 'two_factor'
             
