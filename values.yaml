@@ -176,8 +176,8 @@ authelia:
 
     identity_providers:
       oidc:
+        enabled: true
         cors:
-          enable: true
           endpoints:
             - 'authorization'
             - 'token'
