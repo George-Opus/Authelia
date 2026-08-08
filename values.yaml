@@ -207,13 +207,13 @@ authelia:
             scopes: ['openid', 'profile', 'email', 'groups', 'offline_access']
             authorization_policy: 'two_factor'
           - client_id: 'vaultwarden'
-            client_name: 'vaultwarden'
-            public: true
-            require_pkce: true
-            pkce_challenge_method: 'S256'
+          client_secret: 'CHANGEME_HASH_PBKDF2'
+            token_endpoint_auth_method: 'client_secret_post'
             consent_mode: 'pre-configured'
             pre_configured_consent_duration: '3 months'
             redirect_uris:
-              - 'https://vaultwarden.georgeop.us/'
-            scopes: ['openid', 'profile', 'email', 'groups', 'offline_access']
+              - 'https://photos.georgeop.us/login'
+              - 'https://photos.georgeop.us/'
+            scopes: ['openid', 'profile', 'email']
             authorization_policy: 'two_factor'
+            
