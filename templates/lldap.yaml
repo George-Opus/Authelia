@@ -30,8 +30,8 @@ spec:
             runAsNonRoot: true
             allowPrivilegeEscalation: false
             capabilities:
-              add: ["CHOWN", "SETUID", "SETGID"]
               drop: ["ALL"]
+              add: ["CHOWN", "SETUID", "SETGID"]
           ports:
             - name: ldap
               containerPort: 3890
