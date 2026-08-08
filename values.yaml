@@ -79,7 +79,7 @@ lldap:
 # Conservé en filet de rollback quelques jours après la bascule lldap,
 # puis à supprimer définitivement (ainsi que le Secret authelia-users).
 users:
-  create: true
+  create: false
   secretName: authelia-users
   entries: {}
 
@@ -96,7 +96,7 @@ authelia:
     className: traefik
     annotations:
       traefik.ingress.kubernetes.io/router.entrypoints: websecure
-      # cert-manager.io/cluster-issuer: letsencrypt-prod
+      cert-manager.io/cluster-issuer: letsencrypt-prod
     tls:
       enabled: true
       secret: authelia-tls
@@ -120,21 +120,21 @@ authelia:
 
     # ---- Backend utilisateurs : lldap ----
     authentication_backend:
-      # ldap:
-      #   enabled: true
-      #   implementation: 'lldap'    # profil natif : schéma/attributs préconfigurés
-      #   address: 'ldap://{{ printf "%s-lldap" (include "authelia-stack.fullname" $) }}.authelia.svc.cluster.local:3890'
-      #   base_dn: 'dc=georgeop,dc=us'
-      #   user: 'uid=authelia,ou=people,dc=georgeop,dc=us'
-      #   password:
-      #     secret_name: 'authelia-ldap'
-      #     path: 'password'
-      file:                     # LEGACY - rollback: réactiver + users.create=true
+      ldap:
         enabled: true
-        path: '/secrets/authelia-users/users_database.yml'
-        watch: false
+        implementation: 'lldap'    # profil natif : schéma/attributs préconfigurés
+        address: 'ldap://{{ printf "%s-lldap" (include "authelia-stack.fullname" $) }}.authelia.svc.cluster.local:3890'
+        base_dn: 'dc=georgeop,dc=us'
+        user: 'uid=authelia,ou=people,dc=georgeop,dc=us'
         password:
-          algorithm: 'argon2'
+          secret_name: 'authelia-ldap'
+          path: 'password'
+      # file:                     # LEGACY - rollback: réactiver + users.create=true
+      #   enabled: true
+      #   path: '/secrets/authelia-users/users_database.yml'
+      #   watch: false
+      #   password:
+      #     algorithm: 'argon2'
 
     session:
       cookies:
