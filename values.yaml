@@ -202,5 +202,7 @@ authelia:
               - 'https://opencloud.georgeop.us/'
               - 'https://opencloud.georgeop.us/web-oidc-callback'
               - 'https://opencloud.georgeop.us/web-oidc-silent-redirect'
+              - 'https://opencloud.georgeop.us/oidc-callback.html'
+              - 'https://opencloud.georgeop.us/oidc-silent-redirect.html'
             scopes: ['openid', 'profile', 'email', 'groups', 'offline_access']
             authorization_policy: 'two_factor'
