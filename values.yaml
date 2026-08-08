@@ -1,0 +1,217 @@
+# ============================================================
+# authelia-stack v0.4.0 - Authelia + CNPG + lldap
+# Consolide toute la config validée en session :
+# CORS OIDC, offline_access, consent pre-configured, redirect_uris
+# web-oidc-callback, client_secret_post Immich, notifier SMTP Stalwart,
+# backend LDAP (lldap).
+# ============================================================
+
+# ---------- Cluster PostgreSQL (storage Authelia) ----------
+cnpg:
+  enabled: true
+  clusterName: authelia-db
+  instances: 1
+  imageName: ghcr.io/cloudnative-pg/postgresql:17.4
+  storageClass: local-path
+  size: 2Gi
+  database: authelia
+  owner: authelia
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 512Mi
+
+# ---------- lldap (annuaire utilisateurs + UI d'admin) ----------
+lldap:
+  enabled: true
+  image:
+    repository: lldap/lldap
+    tag: "stable"          # épingler un tag précis en prod (voir releases lldap)
+    pullPolicy: IfNotPresent
+
+  baseDn: "dc=georgeop,dc=us"
+  # URL publique de l'UI (utilisée dans les liens des mails de reset)
+  httpUrl: "https://ldap.georgeop.us"
+
+  # Secret à créer AVANT l'install :
+  # kubectl -n authelia create secret generic lldap-secrets \
+  #   --from-literal=jwt-secret="$(openssl rand -base64 32)" \
+  #   --from-literal=key-seed="$(openssl rand -base64 32)" \
+  #   --from-literal=admin-password='MotDePasseAdminLldap' \
+  #   --from-literal=smtp-password='MotDePasseDuCompteSso'
+  existingSecret: "lldap-secrets"
+
+  # Self-service "mot de passe oublié" par email (via Stalwart)
+  smtp:
+    enabled: true
+    server: "mail.georgeop.us"
+    port: 465
+    encryption: "TLS"           # TLS = implicite (465) ; STARTTLS pour 587
+    user: "sso@georgeop.us"
+    from: "LLDAP <sso@georgeop.us>"
+
+  ingress:
+    enabled: true
+    className: traefik
+    annotations:
+      traefik.ingress.kubernetes.io/router.entrypoints: websecure
+      # cert-manager.io/cluster-issuer: letsencrypt-prod
+    host: ldap.georgeop.us
+    tls:
+      enabled: true
+      secretName: lldap-tls
+
+  persistence:
+    enabled: true
+    storageClass: local-path
+    size: 1Gi
+
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      memory: 128Mi
+
+# ---------- Backend utilisateurs fichier (LEGACY - désactivé) ----------
+# Conservé en filet de rollback quelques jours après la bascule lldap,
+# puis à supprimer définitivement (ainsi que le Secret authelia-users).
+users:
+  create: false
+  secretName: authelia-users
+  entries: {}
+
+# ============================================================
+# Values du chart officiel Authelia
+# ============================================================
+authelia:
+  pod:
+    kind: Deployment
+    replicas: 1
+
+  ingress:
+    enabled: true
+    className: traefik
+    annotations:
+      traefik.ingress.kubernetes.io/router.entrypoints: websecure
+      # cert-manager.io/cluster-issuer: letsencrypt-prod
+    tls:
+      enabled: true
+      secret: authelia-tls
+
+  secret:
+    additionalSecrets:
+      authelia-db-app: {}      # mot de passe PostgreSQL (généré par CNPG)
+      authelia-oidc-jwk: {}    # clé RSA de signature OIDC (créée à la main)
+      authelia-ldap: {}        # mot de passe du compte de service lldap:
+                               #   kubectl -n authelia create secret generic authelia-ldap \
+                               #     --from-literal=password='MotDePasseCompteAuthelia'
+      authelia-smtp: {}        # mot de passe du compte sso@georgeop.us:
+                               #   kubectl -n authelia create secret generic authelia-smtp \
+                               #     --from-literal=password='MotDePasseDuCompteSso'
+
+  configMap:
+    theme: 'dark'
+
+    totp:
+      issuer: 'georgeop.us'
+
+    # ---- Backend utilisateurs : lldap ----
+    authentication_backend:
+      ldap:
+        enabled: true
+        implementation: 'lldap'    # profil natif : schéma/attributs préconfigurés
+        address: 'ldap://{{ printf "%s-lldap" (include "authelia-stack.fullname" $) }}.authelia.svc.cluster.local:3890'
+        base_dn: 'dc=georgeop,dc=us'
+        user: 'uid=authelia,ou=people,dc=georgeop,dc=us'
+        password:
+          secret_name: 'authelia-ldap'
+          path: 'password'
+      # file:                     # LEGACY - rollback: réactiver + users.create=true
+      #   enabled: true
+      #   path: '/secrets/authelia-users/users_database.yml'
+      #   watch: false
+      #   password:
+      #     algorithm: 'argon2'
+
+    session:
+      cookies:
+        - subdomain: 'auth'
+          domain: 'georgeop.us'
+          default_redirection_url: 'https://opencloud.georgeop.us'
+
+    storage:
+      postgres:
+        enabled: true
+        address: 'tcp://authelia-db-rw:5432'
+        database: 'authelia'
+        username: 'authelia'
+        password:
+          secret_name: 'authelia-db-app'
+          path: 'password'
+
+    # ---- Notifier : SMTP via Stalwart (config validée en prod) ----
+    notifier:
+      smtp:
+        enabled: true
+        address: 'submission://mail.georgeop.us:587'
+        username: 'sso@georgeop.us'
+        password:
+          secret_name: 'authelia-smtp'
+          path: 'password'
+        sender: 'Authelia <sso@georgeop.us>'
+        subject: '[Authelia] {title}'
+
+    access_control:
+      default_policy: 'deny'
+      rules:
+        # Affiner par groupes lldap au besoin :
+        # - domain: 'photos.georgeop.us'
+        #   policy: 'two_factor'
+        #   subject: ['group:famille', 'group:admins']
+        - domain: '*.georgeop.us'
+          policy: 'two_factor'
+
+    identity_providers:
+      oidc:
+        cors:
+          endpoints:
+            - 'authorization'
+            - 'token'
+            - 'revocation'
+            - 'userinfo'
+          allowed_origins_from_client_redirect_uris: true
+        jwks:
+          - key_id: 'main'
+            algorithm: 'RS256'
+            use: 'sig'
+            key:
+              path: '/secrets/authelia-oidc-jwk/tls.key'
+        clients:
+          - client_id: 'opencloud'
+            client_name: 'OpenCloud'
+            public: true
+            require_pkce: true
+            pkce_challenge_method: 'S256'
+            consent_mode: 'pre-configured'
+            pre_configured_consent_duration: '3 months'
+            redirect_uris:
+              - 'https://opencloud.georgeop.us/'
+              - 'https://opencloud.georgeop.us/web-oidc-callback'
+              - 'https://opencloud.georgeop.us/web-oidc-silent-redirect'
+            scopes: ['openid', 'profile', 'email', 'groups', 'offline_access']
+            authorization_policy: 'two_factor'
+          - client_id: 'immich'
+            client_name: 'Immich'
+            client_secret: 'CHANGEME_HASH_PBKDF2'
+            token_endpoint_auth_method: 'client_secret_post'
+            consent_mode: 'pre-configured'
+            pre_configured_consent_duration: '3 months'
+            redirect_uris:
+              - 'https://photos.georgeop.us/auth/login'
+              - 'https://photos.georgeop.us/user-settings'
+              - 'app.immich:///oauth-callback'
+            scopes: ['openid', 'profile', 'email']
+            authorization_policy: 'two_factor'

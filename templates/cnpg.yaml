@@ -1,0 +1,30 @@
+{{- if .Values.cnpg.enabled }}
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: {{ .Values.cnpg.clusterName }}
+  labels:
+    app.kubernetes.io/part-of: {{ .Chart.Name }}
+spec:
+  instances: {{ .Values.cnpg.instances }}
+  imageName: {{ .Values.cnpg.imageName }}
+
+  bootstrap:
+    initdb:
+      database: {{ .Values.cnpg.database }}
+      owner: {{ .Values.cnpg.owner }}
+
+  postgresql:
+    parameters:
+      max_connections: "50"
+      shared_buffers: "64MB"
+
+  storage:
+    size: {{ .Values.cnpg.size }}
+    storageClass: {{ .Values.cnpg.storageClass }}
+
+  resources:
+    {{- toYaml .Values.cnpg.resources | nindent 4 }}
+
+  # backup: à configurer (barmanObjectStore S3)
+{{- end }}

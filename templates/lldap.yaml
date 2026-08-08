@@ -1,0 +1,173 @@
+{{- if .Values.lldap.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lldap
+  labels:
+    app.kubernetes.io/name: lldap
+    app.kubernetes.io/part-of: {{ .Chart.Name }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: lldap
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: lldap
+    spec:
+      securityContext:
+        fsGroup: 1000
+      containers:
+        - name: lldap
+          image: "{{ .Values.lldap.image.repository }}:{{ .Values.lldap.image.tag }}"
+          imagePullPolicy: {{ .Values.lldap.image.pullPolicy }}
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          ports:
+            - name: ldap
+              containerPort: 3890
+              protocol: TCP
+            - name: http
+              containerPort: 17170
+              protocol: TCP
+          env:
+            - name: LLDAP_LDAP_BASE_DN
+              value: {{ .Values.lldap.baseDn | quote }}
+            - name: LLDAP_HTTP_URL
+              value: {{ .Values.lldap.httpUrl | quote }}
+            - name: LLDAP_JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.lldap.existingSecret }}
+                  key: jwt-secret
+            - name: LLDAP_KEY_SEED
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.lldap.existingSecret }}
+                  key: key-seed
+            - name: LLDAP_LDAP_USER_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.lldap.existingSecret }}
+                  key: admin-password
+            {{- if .Values.lldap.smtp.enabled }}
+            - name: LLDAP_SMTP_OPTIONS__ENABLE_PASSWORD_RESET
+              value: "true"
+            - name: LLDAP_SMTP_OPTIONS__SERVER
+              value: {{ .Values.lldap.smtp.server | quote }}
+            - name: LLDAP_SMTP_OPTIONS__PORT
+              value: {{ .Values.lldap.smtp.port | quote }}
+            - name: LLDAP_SMTP_OPTIONS__SMTP_ENCRYPTION
+              value: {{ .Values.lldap.smtp.encryption | quote }}
+            - name: LLDAP_SMTP_OPTIONS__USER
+              value: {{ .Values.lldap.smtp.user | quote }}
+            - name: LLDAP_SMTP_OPTIONS__PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.lldap.existingSecret }}
+                  key: smtp-password
+            - name: LLDAP_SMTP_OPTIONS__FROM
+              value: {{ .Values.lldap.smtp.from | quote }}
+            {{- end }}
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          livenessProbe:
+            tcpSocket:
+              port: ldap
+            periodSeconds: 15
+          readinessProbe:
+            tcpSocket:
+              port: http
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.lldap.resources | nindent 12 }}
+      volumes:
+        - name: data
+          {{- if .Values.lldap.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: lldap-data
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: lldap
+  labels:
+    app.kubernetes.io/name: lldap
+    app.kubernetes.io/part-of: {{ .Chart.Name }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: 3890
+      targetPort: ldap
+      protocol: TCP
+      name: ldap
+    - port: 17170
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/name: lldap
+---
+{{- if .Values.lldap.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: lldap-data
+  labels:
+    app.kubernetes.io/name: lldap
+    app.kubernetes.io/part-of: {{ .Chart.Name }}
+  annotations:
+    helm.sh/resource-policy: keep
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: {{ .Values.lldap.persistence.size }}
+  storageClassName: {{ .Values.lldap.persistence.storageClass }}
+{{- end }}
+---
+{{- if .Values.lldap.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: lldap
+  labels:
+    app.kubernetes.io/name: lldap
+    app.kubernetes.io/part-of: {{ .Chart.Name }}
+  {{- with .Values.lldap.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  ingressClassName: {{ .Values.lldap.ingress.className }}
+  {{- if .Values.lldap.ingress.tls.enabled }}
+  tls:
+    - hosts:
+        - {{ .Values.lldap.ingress.host | quote }}
+      secretName: {{ .Values.lldap.ingress.tls.secretName }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.lldap.ingress.host | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: lldap
+                port:
+                  name: http
+{{- end }}
+{{- end }}
