@@ -123,7 +123,7 @@ authelia:
       ldap:
         enabled: true
         implementation: 'lldap'    # profil natif : schéma/attributs préconfigurés
-        address: 'ldap://{{ printf "%s-lldap" (include "authelia-stack.fullname" $) }}.authelia.svc.cluster.local:3890'
+        address: 'ldap://lldap.authelia.svc.cluster.local:3890'
         base_dn: 'dc=georgeop,dc=us'
         user: 'uid=authelia,ou=people,dc=georgeop,dc=us'
         password:
