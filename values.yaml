@@ -212,8 +212,7 @@ authelia:
             consent_mode: 'pre-configured'
             pre_configured_consent_duration: '3 months'
             redirect_uris:
-              - 'https://vaultwarden.georgeop.us/login'
-              - 'https://vaultwarden.georgeop.us/'
+              - 'https://vaultwarden.georgeop.us/identity/connect/oidc-signin'
             scopes: ['openid', 'profile', 'email', 'groups', 'offline_access']
             authorization_policy: 'two_factor'
             
