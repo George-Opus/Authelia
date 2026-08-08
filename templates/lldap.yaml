@@ -25,9 +25,6 @@ spec:
           image: "{{ .Values.lldap.image.repository }}:{{ .Values.lldap.image.tag }}"
           imagePullPolicy: {{ .Values.lldap.image.pullPolicy }}
           securityContext:
-            runAsUser: 1000
-            runAsGroup: 1000
-            runAsNonRoot: true
             allowPrivilegeEscalation: false
             capabilities:
               drop: ["ALL"]
