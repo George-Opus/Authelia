@@ -47,8 +47,8 @@ lldap:
   smtp:
     enabled: true
     server: "mail.georgeop.us"
-    port: 465
-    encryption: "TLS"           # TLS = implicite (465) ; STARTTLS pour 587
+    port: 587
+    encryption: "STARTTLS"           # TLS = implicite (465) ; STARTTLS pour 587
     user: "sso@georgeop.us"
     from: "LLDAP <sso@georgeop.us>"
 
@@ -57,7 +57,7 @@ lldap:
     className: traefik
     annotations:
       traefik.ingress.kubernetes.io/router.entrypoints: websecure
-      # cert-manager.io/cluster-issuer: letsencrypt-prod
+      cert-manager.io/cluster-issuer: letsencrypt-prod
     host: ldap.georgeop.us
     tls:
       enabled: true
@@ -79,7 +79,7 @@ lldap:
 # Conservé en filet de rollback quelques jours après la bascule lldap,
 # puis à supprimer définitivement (ainsi que le Secret authelia-users).
 users:
-  create: false
+  create: true
   secretName: authelia-users
   entries: {}
 
@@ -120,21 +120,21 @@ authelia:
 
     # ---- Backend utilisateurs : lldap ----
     authentication_backend:
-      ldap:
-        enabled: true
-        implementation: 'lldap'    # profil natif : schéma/attributs préconfigurés
-        address: 'ldap://{{ printf "%s-lldap" (include "authelia-stack.fullname" $) }}.authelia.svc.cluster.local:3890'
-        base_dn: 'dc=georgeop,dc=us'
-        user: 'uid=authelia,ou=people,dc=georgeop,dc=us'
-        password:
-          secret_name: 'authelia-ldap'
-          path: 'password'
-      # file:                     # LEGACY - rollback: réactiver + users.create=true
+      # ldap:
       #   enabled: true
-      #   path: '/secrets/authelia-users/users_database.yml'
-      #   watch: false
+      #   implementation: 'lldap'    # profil natif : schéma/attributs préconfigurés
+      #   address: 'ldap://{{ printf "%s-lldap" (include "authelia-stack.fullname" $) }}.authelia.svc.cluster.local:3890'
+      #   base_dn: 'dc=georgeop,dc=us'
+      #   user: 'uid=authelia,ou=people,dc=georgeop,dc=us'
       #   password:
-      #     algorithm: 'argon2'
+      #     secret_name: 'authelia-ldap'
+      #     path: 'password'
+      file:                     # LEGACY - rollback: réactiver + users.create=true
+        enabled: true
+        path: '/secrets/authelia-users/users_database.yml'
+        watch: false
+        password:
+          algorithm: 'argon2'
 
     session:
       cookies:
@@ -202,16 +202,4 @@ authelia:
               - 'https://opencloud.georgeop.us/web-oidc-callback'
               - 'https://opencloud.georgeop.us/web-oidc-silent-redirect'
             scopes: ['openid', 'profile', 'email', 'groups', 'offline_access']
-            authorization_policy: 'two_factor'
-          - client_id: 'immich'
-            client_name: 'Immich'
-            client_secret: 'CHANGEME_HASH_PBKDF2'
-            token_endpoint_auth_method: 'client_secret_post'
-            consent_mode: 'pre-configured'
-            pre_configured_consent_duration: '3 months'
-            redirect_uris:
-              - 'https://photos.georgeop.us/auth/login'
-              - 'https://photos.georgeop.us/user-settings'
-              - 'app.immich:///oauth-callback'
-            scopes: ['openid', 'profile', 'email']
             authorization_policy: 'two_factor'
