@@ -217,4 +217,12 @@ authelia:
             token_endpoint_auth_method: 'client_secret_basic'
             scopes: ['openid', 'profile', 'email', 'groups', 'offline_access']
             authorization_policy: 'two_factor'
-            
+          - client_id: 'immich'
+            client_name: 'Immich'
+            client_secret: '$argon2id$v=19$m=65540,t=3,p=4$BuEns6WwJY50WrPaj9MUp7Q5blbQYPlQcNeZ+us881Q$OvtP20/U7QmgAIyn1Uc65BgGVs4W/BKGZPN2Uw3KeCA'
+            redirect_uris:
+              - 'https://photos.georgeop.us/auth/login'
+              - 'https://photos.georgeop.us/user-settings'
+              - 'app.immich:///oauth-callback'
+            scopes: ['openid', 'profile', 'email']
+            authorization_policy: 'two_factor'
