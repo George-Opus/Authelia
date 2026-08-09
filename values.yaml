@@ -226,3 +226,5 @@ authelia:
               - 'app.immich:///oauth-callback'
             scopes: ['openid', 'profile', 'email']
             authorization_policy: 'two_factor'
+            consent_mode: 'pre-configured'
+            pre_configured_consent_duration: '3 months'
