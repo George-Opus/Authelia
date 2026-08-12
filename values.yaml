@@ -163,6 +163,8 @@ authelia:
           path: 'password'
         sender: 'Authelia <sso@georgeop.us>'
         subject: '[Authelia] {title}'
+        tls:
+          server_name: 'mail.georgeop.us'
 
     access_control:
       default_policy: 'deny'
