@@ -234,7 +234,8 @@ authelia:
             public: false
             authorization_policy: 'two_factor'            
             redirect_uris:
-              - 'https://webmail.georgeop.us/api/auth/callback'                                                     
+              - 'https://webmail.georgeop.us/fr/auth/callback'
+              - 'https://webmail.georgeop.us/en/auth/callback'                                                  
             scopes:
               - 'openid'
               - 'profile'
