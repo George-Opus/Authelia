@@ -228,3 +228,42 @@ authelia:
             authorization_policy: 'two_factor'
             consent_mode: 'pre-configured'
             pre_configured_consent_duration: '3 months'
+          - client_id: 'bulwark'
+            client_name: 'Bulwark'
+            client_secret: '$pbkdf2-sha512$310000$tX020591muNJEzGRfIzerw$olHEVeFfDQgADZgsrp7DyWh02Hkorp9/zE7.5bdovw0mkbG34LE/XEmRIyQMBtfJnwlyU2yoATa08TMdOt5s/w'          
+            public: false
+            authorization_policy: 'two_factor'            
+            redirect_uris:
+              - 'https://webmail.georgeop.us/api/auth/callback'                                                     
+            scopes:
+              - 'openid'
+              - 'profile'
+              - 'email'
+              - 'offline_access'                          
+            grant_types:
+              - 'authorization_code'
+              - 'refresh_token'
+            response_types:
+              - 'code'
+            token_endpoint_auth_method: 'client_secret_basic'
+            consent_mode: 'pre-configured'
+            pre_configured_consent_duration: '3 months'
+          - client_id: 'stalwart'
+            client_name: 'Stalwart'
+            client_secret: '$pbkdf2-sha512$310000$.5sF4d/XU2XsWKu1nABDUw$u8vBz5RF5xz51938iGDClpmOLXVa2h60vFyyNDAn/Pe9VFSMGpqHMimjn13Mw.D9WiuYGWDDPTWGAz0HXWQwdQ'        
+            public: false
+            authorization_policy: 'two_factor'
+            redirect_uris:
+              - 'https://mail.georgeop.us/auth/oauth'     
+                                                          
+            scopes:
+              - 'openid'
+              - 'profile'
+              - 'email'
+            grant_types:
+              - 'authorization_code'
+            response_types:
+              - 'code'
+            token_endpoint_auth_method: 'client_secret_basic'
+            consent_mode: 'pre-configured'
+            pre_configured_consent_duration: '3 months'
