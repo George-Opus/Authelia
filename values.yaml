@@ -156,7 +156,7 @@ authelia:
     notifier:
       smtp:
         enabled: true
-        address: 'submission://mail.georgeop.us:587'
+        address: 'submission://stalwart.stalwart.svc.cluster.local:587'
         username: 'sso@georgeop.us'
         password:
           secret_name: 'authelia-smtp'
