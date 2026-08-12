@@ -247,7 +247,7 @@ authelia:
             response_types:
               - 'code'
             token_endpoint_auth_method: 'client_secret_post'
-            consent_mode: 'pre-implicit'
+            consent_mode: 'implicit'
           - client_id: 'stalwart'
             client_name: 'Stalwart'
             client_secret: '$pbkdf2-sha512$310000$.5sF4d/XU2XsWKu1nABDUw$u8vBz5RF5xz51938iGDClpmOLXVa2h60vFyyNDAn/Pe9VFSMGpqHMimjn13Mw.D9WiuYGWDDPTWGAz0HXWQwdQ'        
